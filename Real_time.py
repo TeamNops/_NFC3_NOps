@@ -1,17 +1,26 @@
 import torch
-import os                       # for working with files
-import numpy as np              # for numerical computationss
-import pandas as pd             # for working with dataframes
-import torch                    # Pytorch module 
-import matplotlib.pyplot as plt # for plotting informations on graph and images using tensors
-import torch.nn as nn           # for creating  neural networks
+import cv2  # Import OpenCV
+import numpy as np
+from PIL import Image
+import torchvision.transforms as transforms
+import torch
+import os                      
+import numpy as np            
+import pandas as pd             
+import torch                    
+import matplotlib.pyplot as plt 
+import torch.nn as nn          
 from torch.utils.data import DataLoader # for dataloaders 
-from PIL import Image           # for checking images
-import torch.nn.functional as F # for functions for calculating loss
-import torchvision.transforms as transforms   # for transforming images into tensors 
-from torchvision.utils import make_grid       # for data checking
+from PIL import Image
+import torch.nn.functional as F
+import torchvision.transforms as transforms
+from torchvision.utils import make_grid     
 from torchvision.datasets import ImageFolder  
 import torchaudio
+transform = transforms.Compose([
+    transforms.Resize((256, 256)),
+    transforms.ToTensor(),         
+])
 def accuracy(outputs, labels):
     _, preds = torch.max(outputs, dim=1)
     return torch.tensor(torch.sum(preds == labels).item() / len(preds))
@@ -40,15 +49,15 @@ class ImageClassificationBase(nn.Module):
     
     def training_step(self, batch):
         images, labels = batch
-        out = self(images)                  # Generate predictions
-        loss = F.cross_entropy(out, labels) # Calculate loss
+        out = self(images)
+        loss = F.cross_entropy(out, labels) 
         return loss
     
     def validation_step(self, batch):
         images, labels = batch
-        out = self(images)                   # Generate prediction
-        loss = F.cross_entropy(out, labels)  # Calculate loss
-        acc = accuracy(out, labels)          # Calculate accuracy
+        out = self(images)                   
+        loss = F.cross_entropy(out, labels)  
+        acc = accuracy(out, labels)         
         return {"val_loss": loss.detach(), "val_accuracy": acc}
     
     def validation_epoch_end(self, outputs):
@@ -91,67 +100,41 @@ class ResNet9(ImageClassificationBase):
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-model = ResNet9(3,38)  
+model = ResNet9(3, 38)
 model.load_state_dict(torch.load('Plant_Disease_Predictor.pth'))
 model = model.to(device)
-model.eval()  
+model.eval()
 
-transform = transforms.Compose([
-    transforms.Resize((256, 256)),
-    transforms.ToTensor()
-]) 
-img_path = 'RS_Rust 1563.JPG'  # Replace with your image path
-image = Image.open(img_path)
-image = transform(image)
-image = image.unsqueeze(0)  # Add batch dimension
+classes = ['Apple___Apple_scab', 'Apple___Black_rot', 'Apple___Cedar_apple_rust', 'Apple___healthy',
+           'Blueberry___healthy', 'Cherry_(including_sour)___Powdery_mildew', 'Cherry_(including_sour)___healthy',
+           'Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot', 'Corn_(maize)___Common_rust_',
+           'Corn_(maize)___Northern_Leaf_Blight', 'Corn_(maize)___healthy', 'Grape___Black_rot',
+           'Grape___Esca_(Black_Measles)', 'Grape___Leaf_blight_(Isariopsis_Leaf_Spot)', 'Grape___healthy',
+           'Orange___Haunglongbing_(Citrus_greening)', 'Peach___Bacterial_spot', 'Peach___healthy',
+           'Pepper,_bell___Bacterial_spot', 'Pepper,_bell___healthy', 'Potato___Early_blight',
+           'Potato___Late_blight', 'Potato___healthy', 'Raspberry___healthy', 'Soybean___healthy',
+           'Squash___Powdery_mildew', 'Strawberry___Leaf_scorch', 'Strawberry___healthy', 'Tomato___Bacterial_spot',
+           'Tomato___Early_blight', 'Tomato___Late_blight', 'Tomato___Leaf_Mold', 'Tomato___Septoria_leaf_spot',
+           'Tomato___Spider_mites Two-spotted_spider_mite', 'Tomato___Target_Spot',
+           'Tomato___Tomato_Yellow_Leaf_Curl_Virus', 'Tomato___Tomato_mosaic_virus', 'Tomato___healthy']
 
-# Move the image tensor to the device
-image = image.to(device)
+cap = cv2.VideoCapture(0)
 
-# Make predictions
-with torch.no_grad():
-    output = model(image)
-    _, predicted = torch.max(output, 1)
+while True:
+    ret, frame = cap.read()
+    img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    pil_img = Image.fromarray(img)
+    img_tensor = transform(pil_img).unsqueeze(0).to(device)
 
-List=['Apple___Apple_scab',
- 'Apple___Black_rot',
- 'Apple___Cedar_apple_rust',
- 'Apple___healthy',
- 'Blueberry___healthy',
- 'Cherry_(including_sour)___Powdery_mildew',
- 'Cherry_(including_sour)___healthy',
- 'Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot',
- 'Corn_(maize)___Common_rust_',
- 'Corn_(maize)___Northern_Leaf_Blight',
- 'Corn_(maize)___healthy',
- 'Grape___Black_rot',
- 'Grape___Esca_(Black_Measles)',
- 'Grape___Leaf_blight_(Isariopsis_Leaf_Spot)',
- 'Grape___healthy',
- 'Orange___Haunglongbing_(Citrus_greening)',
- 'Peach___Bacterial_spot',
- 'Peach___healthy',
- 'Pepper,_bell___Bacterial_spot',
- 'Pepper,_bell___healthy',
- 'Potato___Early_blight',
- 'Potato___Late_blight',
- 'Potato___healthy',
- 'Raspberry___healthy',
- 'Soybean___healthy',
- 'Squash___Powdery_mildew',
- 'Strawberry___Leaf_scorch',
- 'Strawberry___healthy',
- 'Tomato___Bacterial_spot',
- 'Tomato___Early_blight',
- 'Tomato___Late_blight',
- 'Tomato___Leaf_Mold',
- 'Tomato___Septoria_leaf_spot',
- 'Tomato___Spider_mites Two-spotted_spider_mite',
- 'Tomato___Target_Spot',
- 'Tomato___Tomato_Yellow_Leaf_Curl_Virus',
- 'Tomato___Tomato_mosaic_virus',
- 'Tomato___healthy']
-predicted_class = List[predicted.item()]
-print(f'Predicted class: {predicted_class}')           
+    with torch.no_grad():
+        output = model(img_tensor)
+        _, predicted = torch.max(output, 1)
+        predicted_class = classes[predicted.item()]
     
-print(torch.cuda.is_available())
+    cv2.putText(frame, f'Prediction: {predicted_class}', (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
+    cv2.imshow('Plant Disease Predictor', frame)
+
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+cap.release()
+cv2.destroyAllWindows()
