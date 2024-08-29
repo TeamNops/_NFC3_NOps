@@ -1,4 +1,3 @@
-import torch
 import cv2  # Import OpenCV
 import numpy as np
 from PIL import Image
@@ -17,6 +16,8 @@ import torchvision.transforms as transforms
 from torchvision.utils import make_grid     
 from torchvision.datasets import ImageFolder  
 import torchaudio
+from Image_Classification import ImageClassificationBase
+from Blocks import ConvBlock
 class ResNet9(ImageClassificationBase):
     def __init__(self, in_channels, num_diseases):
         super().__init__()

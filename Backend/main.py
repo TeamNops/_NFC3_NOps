@@ -3,6 +3,7 @@ from pydantic import BaseModel
 import joblib
 import numpy as np
 from xgboost import XGBClassifier
+from Resnet import ResNet9
 
 # Define the FastAPI app
 app = FastAPI()
