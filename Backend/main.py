@@ -46,6 +46,9 @@ def predict(features: SoilFertilityFeatures):
     # Return the prediction result
     return {"prediction": fertility_level}
 
+@app.post('/Crop_Diseases')
+def CROP():
+    pass
 # Root endpoint (optional)
 @app.get("/")
 def read_root():
