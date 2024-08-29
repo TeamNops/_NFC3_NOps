@@ -1,33 +1,52 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-app=FastAPI()
-#Decorator path operation
-@app.get('/blog')
-def index(limit,published:bool=True):
-    # return published
-    #only get
-    if published:
-        return {'data':f'{limit} blogs are published from the db list'}
-    else:
-        return {'data':f'{limit} blogs are not published from the db list'}
-@app.get('/blog/unpublished')
-def about():    
-    return {'data':'All unpublished blog'}
+import joblib
+import numpy as np
+from xgboost import XGBClassifier
 
-@app.get('/blog/{id}')
-def about(id:int):    
-    return {'data':id}
+# Define the FastAPI app
+app = FastAPI()
 
-@app.get('/blog/{id}/comments')
-def comments(id):    
-    return {'data':{'comments',"mume dedunga choco"}}
+# Load the model from the .joblib file
+model_filename = 'gradientOG.joblib'
+model = joblib.load(model_filename)
 
-class Blog(BaseModel):
-    title:str
-    body:str
-    published:bool
+# Define the data model for the input
+class SoilFertilityFeatures(BaseModel):
+    N: float
+    P: float
+    K: float
+    pH: float
+    EC: float
+    OC: float
+    S: float
+    Zn: float
+    Fe: float
+    Cu: float
+    Mn: float
+    B: float
 
-@app.post('/blog2')
-def create_blog(blog:Blog):
-    # return request
-    return {'data':f'Blog created with title {blog.title}'}
+# Define the prediction endpoint
+@app.post('/predict/')
+def predict(features: SoilFertilityFeatures):
+    # Convert the input data to a numpy array
+    input_data = np.array([[
+        features.N, features.P, features.K, features.pH, features.EC,
+        features.OC, features.S, features.Zn, features.Fe, features.Cu,
+        features.Mn, features.B
+    ]])
+    
+    # Make a prediction using the loaded model
+    prediction = model.predict(input_data)[0]
+    
+    # Map the prediction to fertility levels
+    fertility_mapping = {0: 'Low Fertility', 1: 'Medium Fertility', 2: 'High Fertility'}
+    fertility_level = fertility_mapping.get(prediction, "Unknown")
+
+    # Return the prediction result
+    return {"prediction": fertility_level}
+
+# Root endpoint (optional)
+@app.get("/")
+def read_root():
+    return {"message": "Welcome to the Soil Fertility Prediction API"}
