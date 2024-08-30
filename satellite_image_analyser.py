@@ -9,3 +9,6 @@ You will be given top view of satellite you role is to find any abornamality in 
 input_prompt='Please assist me'
 response = model.generate_content([input_prompt, img, input])
 print(response.text)
+models=genai.list_models()
+for model in models:
+    print(model.name)

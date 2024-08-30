@@ -41,6 +41,7 @@ url = f"http://api.weatherapi.com/v1/current.json?key={api_key}&q={city}"
 
 response = requests.get(url)
 data = response.json()
-#print(data)
-print(data['current'])
-print(data['location'])
+print(data)
+
+# print(data['current'])
+# print(data['location'])
