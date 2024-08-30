@@ -1,7 +1,9 @@
 from fastapi import FastAPI,Form,Response
 from pydantic import BaseModel
 import joblib
+import tensorflow as tf
 import numpy as np
+from fastapi.responses import JSONResponse
 #from xgboost import XGBClassifier
 from Resnet import ResNet9
 import cv2  # Import OpenCV
@@ -392,7 +394,43 @@ You will be given a satellite image of farmland. Your task is to identify any ab
         raise HTTPException(status_code=500, detail=f"Weather API request failed: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+    
+model_keras=tf.keras.models.load_model('wheatDiseaseModel.h5')
+def preprocess_image(image):
+    image = image.resize((64, 64))  # Resize the image to the expected input size
+    img_array = np.array(image)  # Convert the image to a NumPy array
+    img_array = img_array / 255.0  # Normalize to [0,1] range
+    img_array = np.expand_dims(img_array, axis=0)  # Add batch dimension: (1, 64, 64, 3)
+    return img_array
 
+@app.post("/Crops")
+async def predict(file: UploadFile = File(...)):
+    try:
+        # Read the file contents
+        contents = await file.read()
+        image = Image.open(BytesIO(contents))
+        # Define the class names
+        class_names = ['Wheat_crown_root_rot', 'Wheat_healthy', 'Wheat_Leaf_Rust', 'Wheat_Loose_smut']
+
+
+        # Preprocess the image
+        input_image = preprocess_image(image)
+
+        # Make predictions
+        predictions = model_keras.predict(input_image)
+        
+        # Get the index of the class with the highest probability
+        predicted_class_index = np.argmax(predictions, axis=-1)[0]
+        
+        # Get the predicted class name
+        predicted_class_name = class_names[predicted_class_index]
+        
+        return JSONResponse(content={"predicted_class": predicted_class_name})
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
 @app.get("/")
 def read_root():
     return {"message": "Welcome to the Soil Fertility Prediction API"}
+
+
+
