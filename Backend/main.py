@@ -42,7 +42,7 @@ import io
 from io import BytesIO
 # Define the FastAPI a
 app = FastAPI()
-genai.configure(api_key='AIzaSyAkq2vvoBwK6PNR9FSFS-c5rC_ydXb5Jn0')
+genai.configure(api_key='AIzaSyDmizkFBUkjIwDMj8C_up7t5SrsquMtE2s')
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # Adjust this to specific domains in production
